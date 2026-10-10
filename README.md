@@ -1,75 +1,51 @@
-# React + TypeScript + Vite
+# Startup Connect — Front-end (PWA)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plataforma no estilo "Tinder" para conectar **startups** e **investidores**, com **mentores** que atendem solicitações de mentoria das startups.
 
-Currently, two official plugins are available:
+Stack: React 19 + TypeScript + Vite, React Router, Tailwind CSS v4 e `vite-plugin-pwa`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Rodando
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev       # desenvolvimento (http://localhost:5173)
+npm run build     # build de produção em dist/
+npm run preview   # serve o build (teste a instalação do PWA aqui)
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Contas de teste (qualquer senha):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Perfil     | E-mail                |
+| ---------- | --------------------- |
+| Startup    | contato@agrosense.dev |
+| Investidor | deals@sementecap.com  |
+| Mentor     | juliana@mentor.dev    |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estrutura
 
 ```
+src/
+  components/   componentes reutilizáveis (layout, cards, botões, aviso de atualização do PWA)
+  contexts/     autenticação (AuthProvider + hook useAuth)
+  mocks/        dados falsos usados enquanto o back-end não está pronto
+  pages/        uma página por rota
+  services/     api.ts — ÚNICO ponto de acesso a dados
+  types/        tipos do domínio (Perfil, Match, SolicitacaoMentoria…)
+  utils/        formatação de moeda/datas
+  routes.tsx    definição das rotas
+```
+
+## Integração com o back-end
+
+Todas as páginas falam apenas com `src/services/api.ts`. Hoje as funções leem/escrevem nos mocks
+(em memória — os dados voltam ao original ao recarregar). Para integrar:
+
+1. Copie `.env.example` para `.env` e preencha `VITE_API_URL`.
+2. Troque o corpo de cada função em `api.ts` por uma chamada ao helper `http()`, mantendo a mesma assinatura.
+
+## PWA
+
+- Manifest, service worker e ícones são gerados pelo `vite-plugin-pwa` (configuração em `vite.config.ts`).
+- Os ícones são gerados automaticamente a partir de `public/logo.svg` — troque esse arquivo para mudar o ícone do app.
+- Quando uma nova versão é publicada, o app mostra um aviso "Nova versão disponível".
