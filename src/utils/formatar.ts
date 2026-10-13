@@ -3,5 +3,3 @@ export const formatarReais = (valor: number) =>
 
 export const formatarHora = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-
-export const formatarData = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')

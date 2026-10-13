@@ -1,40 +1,54 @@
-export type Papel = 'startup' | 'investidor' | 'mentor'
+import type { ESTAGIOS, SEGMENTOS } from '../constants'
 
-export interface Usuario {
+export type Papel = 'startup' | 'investidor'
+export type Segmento = (typeof SEGMENTOS)[number]
+export type Estagio = (typeof ESTAGIOS)[number]
+
+interface UsuarioBase {
   id: string
   nome: string
   email: string
   papel: Papel
+  /** URL ou data URL da foto/logo */
   foto?: string
-  bio: string
-  cidade?: string
+  localizacao: string
 }
 
-export type EstagioStartup = 'ideia' | 'mvp' | 'tracao' | 'escala'
-
-export interface PerfilStartup extends Usuario {
+export interface PerfilStartup extends UsuarioBase {
   papel: 'startup'
-  setor: string
-  estagio: EstagioStartup
-  captacaoPretendida: number
-  pitch: string
+  descricao: string
+  segmento: Segmento
+  estagio: Estagio
+  composicaoEquipe: string
+  mercado: string
+  modeloNegocio: string
+  /** Valor que a startup busca captar (R$) */
+  valorInvestimento: number
+  /** Participação societária oferecida em troca do investimento (%) — exibida como "aderência" */
+  participacaoOferecida: number
 }
 
-export interface PerfilInvestidor extends Usuario {
+export interface PerfilInvestidor extends UsuarioBase {
   papel: 'investidor'
-  setoresDeInteresse: string[]
-  ticketMinimo: number
-  ticketMaximo: number
+  tese: string
+  segmentosInteresse: Segmento[]
+  estagiosPreferidos: Estagio[]
+  investimentoMinimo: number
+  investimentoMaximo: number
 }
 
-export interface PerfilMentor extends Usuario {
-  papel: 'mentor'
-  especialidades: string[]
+export type Perfil = PerfilStartup | PerfilInvestidor
+
+/** Distributes Omit over the union so each variant keeps its own fields. */
+type SemId<T> = T extends unknown ? Omit<T, 'id'> : never
+export type DadosCadastro = SemId<Perfil> & { senha: string }
+
+/** "deId registrou interesse em paraId". Interesse mútuo = match. */
+export interface Interesse {
+  deId: string
+  paraId: string
+  criadoEm: string
 }
-
-export type Perfil = PerfilStartup | PerfilInvestidor | PerfilMentor
-
-export type Acao = 'like' | 'pass'
 
 export interface Match {
   id: string
@@ -50,21 +64,15 @@ export interface Mensagem {
   enviadaEm: string
 }
 
-export type StatusMentoria = 'pendente' | 'aceita' | 'recusada' | 'concluida'
-
-export interface SolicitacaoMentoria {
-  id: string
-  startupId: string
-  mentorId: string
-  assunto: string
-  descricao: string
-  status: StatusMentoria
-  criadaEm: string
+export interface FiltrosBusca {
+  texto: string
+  segmento: string
+  localizacao: string
+  estagio: string
 }
 
-export interface DadosCadastro {
-  nome: string
-  email: string
-  senha: string
-  papel: Papel
+export interface ResumoAtividade {
+  interessesEnviados: number
+  interessesRecebidos: number
+  matches: number
 }

@@ -1,153 +1,104 @@
-import { useState, type FormEvent } from 'react'
-import { Avatar } from '../components/Avatar'
-import { CardPerfil } from '../components/CardPerfil'
-import { AreaTexto, Botao, Cabecalho, Campo } from '../components/ui'
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { CabecalhoPagina } from '../components/CabecalhoPagina'
+import { CamposInvestidor, CamposStartup } from '../components/CamposPerfil'
+import { FotoPerfil } from '../components/FotoPerfil'
+import { Botao, Campo, Cartao } from '../components/ui'
 import { useAuth } from '../contexts/auth'
 import type { Perfil as TPerfil } from '../types'
 
-const separar = (texto: string) =>
-  texto
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+const TAMANHO_FOTO = 400 // px — reduzida antes de salvar para não pesar no armazenamento
 
-export function Perfil() {
-  const { usuario, atualizar, sair } = useAuth()
-  const [editando, setEditando] = useState(false)
-
-  if (!usuario) return null
-
-  return (
-    <div>
-      <Cabecalho titulo="Meu perfil" />
-      <div className="space-y-4 p-4">
-        {editando ? (
-          <FormularioPerfil
-            perfil={usuario}
-            onCancelar={() => setEditando(false)}
-            onSalvar={async (p) => {
-              await atualizar(p)
-              setEditando(false)
-            }}
-          />
-        ) : (
-          <>
-            {usuario.bio ? (
-              <CardPerfil perfil={usuario} />
-            ) : (
-              <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-                <Avatar nome={usuario.nome} tamanho="lg" />
-                <p className="font-semibold">{usuario.nome}</p>
-                <p className="text-sm text-slate-500">Complete seu perfil para aparecer para outros usuários.</p>
-              </div>
-            )}
-            <Botao className="w-full" onClick={() => setEditando(true)}>
-              Editar perfil
-            </Botao>
-            <Botao variante="secundario" className="w-full" onClick={sair}>
-              Sair
-            </Botao>
-          </>
-        )}
-      </div>
-    </div>
-  )
+/** Lê a imagem escolhida e devolve uma versão quadrada reduzida em data URL. */
+function redimensionar(arquivo: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const lado = Math.min(img.width, img.height)
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = TAMANHO_FOTO
+      canvas
+        .getContext('2d')!
+        .drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, TAMANHO_FOTO, TAMANHO_FOTO)
+      URL.revokeObjectURL(img.src)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(arquivo)
+  })
 }
 
-function FormularioPerfil({
-  perfil,
-  onSalvar,
-  onCancelar,
-}: {
-  perfil: TPerfil
-  onSalvar: (p: TPerfil) => Promise<void>
-  onCancelar: () => void
-}) {
-  const [p, setP] = useState<TPerfil>(perfil)
-  const [salvando, setSalvando] = useState(false)
-  const mudar = (campos: Partial<TPerfil>) => setP((atual) => ({ ...atual, ...campos }) as TPerfil)
+export function Perfil() {
+  const { usuario, atualizar } = useAuth()
+  const [dados, setDados] = useState<TPerfil | null>(usuario)
+  const [status, setStatus] = useState<'' | 'salvando' | 'salvo'>('')
+  const inputFoto = useRef<HTMLInputElement>(null)
 
-  async function enviar(e: FormEvent) {
+  if (!dados) return null
+
+  const mudar = (campos: Partial<TPerfil>) => {
+    setDados((d) => ({ ...d, ...campos }) as TPerfil)
+    setStatus('')
+  }
+
+  async function escolherFoto(e: ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    if (arquivo) mudar({ foto: await redimensionar(arquivo) })
+  }
+
+  async function salvar(e: FormEvent) {
     e.preventDefault()
-    setSalvando(true)
-    await onSalvar(p)
+    if (!dados) return
+    setStatus('salvando')
+    await atualizar(dados)
+    setStatus('salvo')
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-4">
-      <Campo label="Nome" required value={p.nome} onChange={(e) => mudar({ nome: e.target.value })} />
-      <Campo label="Cidade" value={p.cidade ?? ''} onChange={(e) => mudar({ cidade: e.target.value })} />
-      <AreaTexto label="Bio" required value={p.bio} onChange={(e) => mudar({ bio: e.target.value })} />
+    <>
+      <CabecalhoPagina titulo="Meu perfil" subtitulo="Mantenha suas informações atualizadas para melhores conexões." />
 
-      {p.papel === 'startup' && (
-        <>
-          <Campo label="Setor" value={p.setor} onChange={(e) => mudar({ setor: e.target.value })} />
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Estágio</span>
-            <select
-              value={p.estagio}
-              onChange={(e) => mudar({ estagio: e.target.value as typeof p.estagio })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5"
-            >
-              <option value="ideia">Ideia</option>
-              <option value="mvp">MVP</option>
-              <option value="tracao">Tração</option>
-              <option value="escala">Escala</option>
-            </select>
-          </label>
-          <Campo
-            label="Captação pretendida (R$)"
-            type="number"
-            min={0}
-            value={p.captacaoPretendida}
-            onChange={(e) => mudar({ captacaoPretendida: Number(e.target.value) })}
-          />
-          <AreaTexto label="Pitch" value={p.pitch} onChange={(e) => mudar({ pitch: e.target.value })} />
-        </>
-      )}
-
-      {p.papel === 'investidor' && (
-        <>
-          <Campo
-            label="Setores de interesse (separados por vírgula)"
-            defaultValue={p.setoresDeInteresse.join(', ')}
-            onChange={(e) => mudar({ setoresDeInteresse: separar(e.target.value) })}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Campo
-              label="Ticket mínimo (R$)"
-              type="number"
-              min={0}
-              value={p.ticketMinimo}
-              onChange={(e) => mudar({ ticketMinimo: Number(e.target.value) })}
-            />
-            <Campo
-              label="Ticket máximo (R$)"
-              type="number"
-              min={0}
-              value={p.ticketMaximo}
-              onChange={(e) => mudar({ ticketMaximo: Number(e.target.value) })}
-            />
+      <Cartao className="mx-auto max-w-2xl px-6 py-10 sm:px-14 sm:py-14">
+        <form onSubmit={salvar} className="space-y-6">
+          <div className="flex flex-wrap items-center gap-6 sm:gap-8">
+            {/* No design a foto do perfil é sempre redonda, inclusive o logo da startup */}
+            <div className="overflow-hidden rounded-full bg-white">
+              <FotoPerfil perfil={{ ...dados, papel: 'investidor' }} tamanho="xl" />
+            </div>
+            <div className="space-y-3">
+              <Botao type="button" variante="contorno" onClick={() => inputFoto.current?.click()}>
+                Enviar nova foto
+              </Botao>
+              <p className="text-sm leading-relaxed text-suave">
+                Recomendamos no mínimo 800×800 px.
+                <br />
+                Formatos aceitos: JPG ou PNG.
+              </p>
+              <input
+                ref={inputFoto}
+                type="file"
+                accept="image/png,image/jpeg"
+                className="hidden"
+                onChange={escolherFoto}
+              />
+            </div>
           </div>
-        </>
-      )}
 
-      {p.papel === 'mentor' && (
-        <Campo
-          label="Especialidades (separadas por vírgula)"
-          defaultValue={p.especialidades.join(', ')}
-          onChange={(e) => mudar({ especialidades: separar(e.target.value) })}
-        />
-      )}
+          <Campo label="Nome" required value={dados.nome} onChange={(e) => mudar({ nome: e.target.value })} />
 
-      <div className="flex gap-2">
-        <Botao type="button" variante="secundario" className="flex-1" onClick={onCancelar}>
-          Cancelar
-        </Botao>
-        <Botao type="submit" className="flex-1" disabled={salvando}>
-          Salvar
-        </Botao>
-      </div>
-    </form>
+          {dados.papel === 'startup' ? (
+            <CamposStartup dados={dados} mudar={mudar} />
+          ) : (
+            <CamposInvestidor dados={dados} mudar={mudar} />
+          )}
+
+          <div className="flex flex-col items-center gap-3 pt-6">
+            <Botao type="submit" className="w-full max-w-sm py-3.5 text-lg" disabled={status === 'salvando'}>
+              {status === 'salvando' ? 'Salvando…' : 'Salvar alterações'}
+            </Botao>
+            {status === 'salvo' && <p className="text-sm text-(--acento)">Alterações salvas!</p>}
+          </div>
+        </form>
+      </Cartao>
+    </>
   )
 }

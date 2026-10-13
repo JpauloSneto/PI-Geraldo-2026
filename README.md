@@ -1,8 +1,10 @@
-# Startup Connect — Front-end (PWA)
+# caisUp — Front-end (PWA)
 
-Plataforma no estilo "Tinder" para conectar **startups** e **investidores**, com **mentores** que atendem solicitações de mentoria das startups.
+"O cais que conecta startups a investidores." Startups e investidores se encontram pela busca,
+registram interesse um no outro e, quando o interesse é mútuo, viram **match** e podem conversar.
 
-Stack: React 19 + TypeScript + Vite, React Router, Tailwind CSS v4 e `vite-plugin-pwa`.
+Stack: React 19 + TypeScript + Vite, React Router, Tailwind CSS v4, fonte Google Sans Flex e `vite-plugin-pwa`.
+As telas de referência do Figma estão em `design/`.
 
 ## Rodando
 
@@ -16,30 +18,35 @@ npm run lint
 
 Contas de teste (qualquer senha):
 
-| Perfil     | E-mail                |
-| ---------- | --------------------- |
-| Startup    | contato@agrosense.dev |
-| Investidor | deals@sementecap.com  |
-| Mentor     | juliana@mentor.dev    |
+| Perfil     | E-mail                     |
+| ---------- | -------------------------- |
+| Investidor | larissa@caisup.com         |
+| Startup    | contato@recifelearn.com.br |
 
 ## Estrutura
 
 ```
 src/
-  components/   componentes reutilizáveis (layout, cards, botões, aviso de atualização do PWA)
+  components/   componentes reutilizáveis (layout, campos, balões, ícones, notificações, aviso do PWA)
+  constants.ts  listas de segmentos e estágios
   contexts/     autenticação (AuthProvider + hook useAuth)
   mocks/        dados falsos usados enquanto o back-end não está pronto
   pages/        uma página por rota
   services/     api.ts — ÚNICO ponto de acesso a dados
-  types/        tipos do domínio (Perfil, Match, SolicitacaoMentoria…)
-  utils/        formatação de moeda/datas
+  types/        tipos do domínio (Perfil, Interesse, Match, Mensagem…)
+  utils/        formatação de moeda/datas e textos de perfil
   routes.tsx    definição das rotas
 ```
 
 ## Integração com o back-end
 
-Todas as páginas falam apenas com `src/services/api.ts`. Hoje as funções leem/escrevem nos mocks
-(em memória — os dados voltam ao original ao recarregar). Para integrar:
+Todas as páginas falam apenas com `src/services/api.ts`. Hoje as funções leem/escrevem nos mocks,
+que ficam salvos no `localStorage` do navegador (para zerar: `localStorage.removeItem('caisup-mock-db')`).
+
+A "% aderência" mostrada nos cards é a **participação societária** que a startup oferece
+(`participacaoOferecida` em `PerfilStartup`).
+
+Para integrar:
 
 1. Copie `.env.example` para `.env` e preencha `VITE_API_URL`.
 2. Troque o corpo de cada função em `api.ts` por uma chamada ao helper `http()`, mantendo a mesma assinatura.

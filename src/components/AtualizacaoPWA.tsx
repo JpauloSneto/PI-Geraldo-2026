@@ -25,18 +25,18 @@ export function AtualizacaoPWA() {
 
   return (
     <div
-      className="fixed inset-x-4 z-50 mx-auto flex max-w-sm items-center gap-3 rounded-xl bg-slate-900 p-4 text-sm text-white shadow-lg"
+      className="fixed inset-x-4 z-50 mx-auto flex max-w-sm items-center gap-3 rounded-xl border border-borda bg-superficie p-4 text-sm text-white shadow-lg"
       style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}
     >
       <p className="flex-1">
         {precisaAtualizar ? 'Nova versão disponível.' : 'App pronto para uso offline.'}
       </p>
       {precisaAtualizar && (
-        <button className="font-semibold text-accent-500" onClick={() => updateServiceWorker()}>
+        <button className="font-semibold text-lima" onClick={() => updateServiceWorker()}>
           Atualizar
         </button>
       )}
-      <button className="text-slate-400" onClick={fechar} aria-label="Fechar">
+      <button className="text-suave" onClick={fechar} aria-label="Fechar">
         ✕
       </button>
     </div>

@@ -18,19 +18,19 @@ export default defineConfig({
         overrideManifestIcons: true,
       },
       manifest: {
-        name: 'Startup Connect',
-        short_name: 'StartupConnect',
-        description: 'Conectando startups, investidores e mentores.',
+        name: 'caisUp',
+        short_name: 'caisUp',
+        description: 'O cais que conecta startups a investidores.',
         lang: 'pt-BR',
-        theme_color: '#4f46e5',
-        background_color: '#ffffff',
+        theme_color: '#212226',
+        background_color: '#212226',
         display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/',
+                start_url: '/',
         scope: '/',
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // Só pré-carrega as fontes latinas; os outros alfabetos raramente são usados
+        globPatterns: ['**/*.{js,css,html,svg,png,ico}', '**/*latin*.woff2'],
         navigateFallback: '/index.html',
       },
       devOptions: {

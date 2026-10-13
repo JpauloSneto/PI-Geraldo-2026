@@ -1,112 +1,144 @@
-import type { Match, Mensagem, Perfil, SolicitacaoMentoria } from '../types'
+import type { Interesse, Match, Mensagem, Perfil } from '../types'
 
-export const perfis: Perfil[] = [
-  {
-    id: 's1',
-    nome: 'AgroSense',
-    email: 'contato@agrosense.dev',
-    papel: 'startup',
-    bio: 'Sensores IoT de baixo custo para pequenos produtores rurais.',
-    cidade: 'Goiânia, GO',
-    setor: 'AgTech',
-    estagio: 'mvp',
-    captacaoPretendida: 500_000,
-    pitch: 'Reduzimos em 30% o desperdício de água na irrigação.',
-  },
-  {
-    id: 's2',
-    nome: 'MedFila',
-    email: 'oi@medfila.app',
-    papel: 'startup',
-    bio: 'Agendamento inteligente para clínicas populares.',
-    cidade: 'Recife, PE',
-    setor: 'HealthTech',
-    estagio: 'tracao',
-    captacaoPretendida: 1_200_000,
-    pitch: '40 clínicas ativas e crescimento de 15% ao mês.',
-  },
-  {
-    id: 's3',
-    nome: 'EduPlay',
-    email: 'time@eduplay.com.br',
-    papel: 'startup',
-    bio: 'Gamificação do reforço escolar para o ensino fundamental.',
-    cidade: 'São Paulo, SP',
-    setor: 'EdTech',
-    estagio: 'ideia',
-    captacaoPretendida: 150_000,
-    pitch: 'Piloto com 3 escolas municipais em andamento.',
-  },
-  {
-    id: 'i1',
-    nome: 'Carla Mendes',
-    email: 'carla@anjos.vc',
-    papel: 'investidor',
-    bio: 'Investidora-anjo com foco em impacto social.',
-    cidade: 'Belo Horizonte, MG',
-    setoresDeInteresse: ['HealthTech', 'EdTech'],
-    ticketMinimo: 50_000,
-    ticketMaximo: 300_000,
-  },
-  {
-    id: 'i2',
-    nome: 'Semente Capital',
-    email: 'deals@sementecap.com',
-    papel: 'investidor',
-    bio: 'Fundo pre-seed para startups do agro e clima.',
-    cidade: 'Campinas, SP',
-    setoresDeInteresse: ['AgTech', 'CleanTech'],
-    ticketMinimo: 200_000,
-    ticketMaximo: 1_000_000,
-  },
-  {
-    id: 'm1',
-    nome: 'Rafael Costa',
-    email: 'rafael@mentor.dev',
-    papel: 'mentor',
-    bio: 'Ex-CTO, ajuda startups a escalar produto e time.',
-    cidade: 'Florianópolis, SC',
-    especialidades: ['Produto', 'Tecnologia', 'Contratação'],
-  },
-  {
-    id: 'm2',
-    nome: 'Juliana Prado',
-    email: 'juliana@mentor.dev',
-    papel: 'mentor',
-    bio: 'Especialista em finanças e preparação para rodadas.',
-    cidade: 'Rio de Janeiro, RJ',
-    especialidades: ['Finanças', 'Valuation', 'Pitch'],
-  },
-]
+export interface BancoMock {
+  perfis: Perfil[]
+  interesses: Interesse[]
+  matches: Match[]
+  mensagens: Mensagem[]
+}
 
-export const matches: Match[] = [
-  { id: 'mt1', usuarios: ['s2', 'i1'], criadoEm: '2026-10-01T14:00:00Z' },
-]
+const inicial: BancoMock = {
+  perfis: [
+    {
+      id: 'i1',
+      papel: 'investidor',
+      nome: 'Larissa Borba',
+      email: 'larissa@caisup.com',
+      localizacao: 'Recife',
+      tese: 'Busco founders técnicos resolvendo dores reais de MPEs e do varejo popular no Nordeste, com tração inicial comprovada.',
+      segmentosInteresse: ['Fintech', 'SaaS B2B', 'E-commerce', 'Edtech'],
+      estagiosPreferidos: ['Validação', 'MVP', 'Tração inicial'],
+      investimentoMinimo: 100_000,
+      investimentoMaximo: 600_000,
+    },
+    {
+      id: 'i2',
+      papel: 'investidor',
+      nome: 'Semente Capital',
+      email: 'deals@sementecap.com',
+      localizacao: 'Porto Digital',
+      tese: 'Fundo pre-seed focado em agro, clima e alimentação no Nordeste.',
+      segmentosInteresse: ['Agtech', 'Foodtech', 'Impacto Social'],
+      estagiosPreferidos: ['Ideação', 'Validação', 'MVP'],
+      investimentoMinimo: 50_000,
+      investimentoMaximo: 300_000,
+    },
+    {
+      id: 'i3',
+      papel: 'investidor',
+      nome: 'Porto Ventures',
+      email: 'contato@portoventures.vc',
+      localizacao: 'Recife',
+      tese: 'Investimos em SaaS e fintechs com receita recorrente e time completo.',
+      segmentosInteresse: ['Fintech', 'SaaS B2B', 'Logtech'],
+      estagiosPreferidos: ['Tração inicial', 'Crescimento / Scale'],
+      investimentoMinimo: 500_000,
+      investimentoMaximo: 3_000_000,
+    },
+    {
+      id: 's1',
+      papel: 'startup',
+      nome: 'RecifeLearn',
+      email: 'contato@recifelearn.com.br',
+      localizacao: 'Recife',
+      descricao: 'Plataforma de trilhas de capacitação técnica para jovens de escolas públicas do Recife.',
+      segmento: 'Edtech',
+      estagio: 'Validação',
+      composicaoEquipe: '4 fundadores',
+      mercado: 'Jovens 16-24 anos em escolas públicas',
+      modeloNegocio: 'SaaS / Assinatura',
+      valorInvestimento: 250_000,
+      participacaoOferecida: 50,
+    },
+    {
+      id: 's2',
+      papel: 'startup',
+      nome: 'MaréFintech',
+      email: 'oi@marefintech.com',
+      localizacao: 'Recife',
+      descricao: 'Conta digital e crédito para pequenos comerciantes do Nordeste com atendimento via Whatsapp.',
+      segmento: 'Fintech',
+      estagio: 'Tração inicial',
+      composicaoEquipe: '3 fundadores + 5 colaboradores',
+      mercado: 'Pequenos comerciantes do Nordeste',
+      modeloNegocio: 'Taxa por transação',
+      valorInvestimento: 800_000,
+      participacaoOferecida: 40,
+    },
+    {
+      id: 's3',
+      papel: 'startup',
+      nome: 'CanaVerde',
+      email: 'time@canaverde.agr.br',
+      localizacao: 'Caruaru',
+      descricao: 'Monitoramento de lavouras de cana com sensores de baixo custo.',
+      segmento: 'Agtech',
+      estagio: 'MVP',
+      composicaoEquipe: '2 fundadores',
+      mercado: 'Pequenos produtores de cana-de-açúcar',
+      modeloNegocio: 'Hardware + assinatura',
+      valorInvestimento: 300_000,
+      participacaoOferecida: 20,
+    },
+    {
+      id: 's4',
+      papel: 'startup',
+      nome: 'Clubasque',
+      email: 'ola@clubasque.com',
+      localizacao: 'Olinda',
+      descricao: 'Clube de assinatura de refeições regionais preparadas por cozinheiras locais.',
+      segmento: 'Foodtech',
+      estagio: 'Ideação',
+      composicaoEquipe: '2 fundadoras',
+      mercado: 'Famílias de classe média da RMR',
+      modeloNegocio: 'Assinatura mensal',
+      valorInvestimento: 120_000,
+      participacaoOferecida: 8,
+    },
+  ],
+  interesses: [
+    // Startups que já demonstraram interesse na Larissa
+    { deId: 's2', paraId: 'i1', criadoEm: '2026-10-08T12:00:00Z' },
+    { deId: 's3', paraId: 'i1', criadoEm: '2026-10-09T15:30:00Z' },
+    { deId: 's1', paraId: 'i3', criadoEm: '2026-10-10T09:00:00Z' },
+  ],
+  matches: [],
+  mensagens: [],
+}
 
-export const mensagens: Mensagem[] = [
-  {
-    id: 'msg1',
-    matchId: 'mt1',
-    autorId: 'i1',
-    texto: 'Olá! Gostei muito da tração de vocês. Podemos conversar?',
-    enviadaEm: '2026-10-01T14:05:00Z',
-  },
-]
+/*
+ * Os dados ficam salvos no localStorage para que cadastros, interesses e
+ * conversas sobrevivam ao recarregar a página durante as apresentações.
+ * Para voltar ao estado inicial: localStorage.removeItem('caisup-mock-db').
+ */
+const CHAVE = 'caisup-mock-db'
 
-export const solicitacoesMentoria: SolicitacaoMentoria[] = [
-  {
-    id: 'sm1',
-    startupId: 's1',
-    mentorId: 'm2',
-    assunto: 'Preparação para pitch',
-    descricao: 'Queremos revisar nosso deck antes de falar com fundos.',
-    status: 'pendente',
-    criadaEm: '2026-10-05T10:00:00Z',
-  },
-]
+function carregar(): BancoMock {
+  try {
+    const salvo = localStorage.getItem(CHAVE)
+    if (salvo) return JSON.parse(salvo) as BancoMock
+  } catch {
+    // dados corrompidos: volta ao inicial
+  }
+  return structuredClone(inicial)
+}
 
-// Likes já dados (quem curtiu -> quem). Usado para simular matches recíprocos.
-export const likes: Array<[string, string]> = [
-  ['i2', 's1'],
-  ['i1', 's3'],
-]
+export const db = carregar()
+
+export function salvarDb() {
+  try {
+    localStorage.setItem(CHAVE, JSON.stringify(db))
+  } catch {
+    // armazenamento cheio/bloqueado: segue só em memória
+  }
+}

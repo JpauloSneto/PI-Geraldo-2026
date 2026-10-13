@@ -1,16 +1,18 @@
 import { createBrowserRouter } from 'react-router'
 import { AppLayout } from './components/AppLayout'
 import { RotaProtegida } from './components/RotaProtegida'
+import { Buscar } from './pages/Buscar'
 import { Cadastro } from './pages/Cadastro'
-import { Chat } from './pages/Chat'
-import { Descobrir } from './pages/Descobrir'
+import { Conversas } from './pages/Conversas'
+import { Dashboard } from './pages/Dashboard'
+import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
-import { Matches } from './pages/Matches'
-import { Mentorias } from './pages/Mentorias'
 import { NaoEncontrada } from './pages/NaoEncontrada'
 import { Perfil } from './pages/Perfil'
+import { PlanosPagina } from './pages/PlanosPagina'
 
 export const router = createBrowserRouter([
+  { path: '/', element: <Landing /> },
   { path: '/login', element: <Login /> },
   { path: '/cadastro', element: <Cadastro /> },
   {
@@ -19,11 +21,11 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { index: true, element: <Descobrir /> },
-          { path: 'matches', element: <Matches /> },
-          { path: 'chat/:matchId', element: <Chat /> },
-          { path: 'mentorias', element: <Mentorias /> },
+          { path: 'dashboard', element: <Dashboard /> },
+          { path: 'buscar', element: <Buscar /> },
           { path: 'perfil', element: <Perfil /> },
+          { path: 'conversas/:matchId?', element: <Conversas /> },
+          { path: 'planos', element: <PlanosPagina /> },
         ],
       },
     ],

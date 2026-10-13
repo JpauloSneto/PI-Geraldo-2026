@@ -6,15 +6,16 @@
  * função por uma chamada `http(...)` mantendo as mesmas assinaturas — as
  * páginas não precisam mudar.
  */
-import * as db from '../mocks/data'
+import { db, salvarDb } from '../mocks/data'
 import type {
-  Acao,
   DadosCadastro,
+  FiltrosBusca,
   Match,
   Mensagem,
   Perfil,
-  PerfilMentor,
-  SolicitacaoMentoria,
+  PerfilInvestidor,
+  PerfilStartup,
+  ResumoAtividade,
 } from '../types'
 
 export const API_URL = import.meta.env.VITE_API_URL ?? ''
@@ -34,85 +35,146 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
-const esperar = (ms = 300) => new Promise((r) => setTimeout(r, ms))
+const esperar = (ms = 250) => new Promise((r) => setTimeout(r, ms))
 const novoId = () => crypto.randomUUID()
+const perfilPorId = (id: string) => db.perfis.find((p) => p.id === id)
 
 // ---------- Autenticação ----------
 
 export async function login(email: string, senha: string): Promise<Perfil> {
   await esperar()
-  const perfil = db.perfis.find((p) => p.email === email)
+  const perfil = db.perfis.find((p) => p.email.toLowerCase() === email.toLowerCase())
   if (!perfil || !senha) throw new Error('E-mail ou senha inválidos')
   return perfil
 }
 
 export async function cadastrar(dados: DadosCadastro): Promise<Perfil> {
   await esperar()
-  if (db.perfis.some((p) => p.email === dados.email)) {
+  if (db.perfis.some((p) => p.email.toLowerCase() === dados.email.toLowerCase())) {
     throw new Error('Este e-mail já está cadastrado')
   }
-  const base = { id: novoId(), nome: dados.nome, email: dados.email, bio: '' }
-  let perfil: Perfil
-  switch (dados.papel) {
-    case 'startup':
-      perfil = { ...base, papel: 'startup', setor: '', estagio: 'ideia', captacaoPretendida: 0, pitch: '' }
-      break
-    case 'investidor':
-      perfil = { ...base, papel: 'investidor', setoresDeInteresse: [], ticketMinimo: 0, ticketMaximo: 0 }
-      break
-    case 'mentor':
-      perfil = { ...base, papel: 'mentor', especialidades: [] }
-      break
-  }
+  // O mock não guarda senha (qualquer senha entra); a API real vai validar.
+  const perfil: Perfil & { senha?: string } = { ...dados, id: novoId() }
+  delete perfil.senha
   db.perfis.push(perfil)
+  salvarDb()
   return perfil
-}
-
-export async function buscarPerfil(id: string): Promise<Perfil | undefined> {
-  await esperar(100)
-  return db.perfis.find((p) => p.id === id)
 }
 
 export async function atualizarPerfil(perfil: Perfil): Promise<Perfil> {
   await esperar()
   const i = db.perfis.findIndex((p) => p.id === perfil.id)
   if (i >= 0) db.perfis[i] = perfil
+  salvarDb()
   return perfil
 }
 
-// ---------- Feed / swipe ----------
+// ---------- Busca ----------
 
-/** Startups veem investidores e vice-versa. */
-export async function buscarFeed(usuario: Perfil): Promise<Perfil[]> {
+/** Investidores buscam startups e vice-versa. */
+export async function buscar(usuario: Perfil, filtros: FiltrosBusca): Promise<Perfil[]> {
   await esperar()
-  const alvo = usuario.papel === 'startup' ? 'investidor' : 'startup'
-  const jaAvaliados = new Set(db.likes.filter(([de]) => de === usuario.id).map(([, para]) => para))
-  return db.perfis.filter((p) => p.papel === alvo && !jaAvaliados.has(p.id))
+  const texto = filtros.texto.trim().toLowerCase()
+  const alvo = usuario.papel === 'investidor' ? 'startup' : 'investidor'
+
+  return db.perfis.filter((p) => {
+    if (p.papel !== alvo) return false
+    if (filtros.localizacao && p.localizacao !== filtros.localizacao) return false
+    if (p.papel === 'startup') {
+      if (filtros.segmento && p.segmento !== filtros.segmento) return false
+      if (filtros.estagio && p.estagio !== filtros.estagio) return false
+      if (texto && !`${p.nome} ${p.descricao}`.toLowerCase().includes(texto)) return false
+    } else {
+      if (filtros.segmento && !p.segmentosInteresse.includes(filtros.segmento as never)) return false
+      if (filtros.estagio && !p.estagiosPreferidos.includes(filtros.estagio as never)) return false
+      if (texto && !`${p.nome} ${p.tese}`.toLowerCase().includes(texto)) return false
+    }
+    return true
+  })
 }
 
-/** Registra like/pass. Retorna o match criado quando o like é recíproco. */
-export async function avaliar(usuarioId: string, alvoId: string, acao: Acao): Promise<Match | null> {
+/** Localizações existentes, para o filtro "Todos os locais". */
+export async function listarLocalizacoes(papel: Perfil['papel']): Promise<string[]> {
+  await esperar(50)
+  const alvo = papel === 'investidor' ? 'startup' : 'investidor'
+  return [...new Set(db.perfis.filter((p) => p.papel === alvo).map((p) => p.localizacao))].sort()
+}
+
+/** Recomendações simples por afinidade de segmento/estágio/valor. */
+export async function recomendacoes(usuario: Perfil, limite = 4): Promise<Perfil[]> {
+  await esperar()
+  const pontuar = (inv: PerfilInvestidor, st: PerfilStartup) =>
+    Number(inv.segmentosInteresse.includes(st.segmento)) * 2 +
+    Number(inv.estagiosPreferidos.includes(st.estagio)) +
+    Number(st.valorInvestimento >= inv.investimentoMinimo && st.valorInvestimento <= inv.investimentoMaximo)
+
+  const candidatos = db.perfis
+    .filter((p) => p.papel !== usuario.papel)
+    .map((p) => ({
+      perfil: p,
+      pontos:
+        usuario.papel === 'investidor'
+          ? pontuar(usuario, p as PerfilStartup)
+          : pontuar(p as PerfilInvestidor, usuario),
+    }))
+    .filter((c) => c.pontos > 0)
+    .sort((a, b) => b.pontos - a.pontos)
+
+  return candidatos.slice(0, limite).map((c) => c.perfil)
+}
+
+// ---------- Interesses e matches ----------
+
+/** Registra interesse. Se o outro lado já tinha registrado, cria e retorna o match. */
+export async function registrarInteresse(deId: string, paraId: string): Promise<Match | null> {
   await esperar(150)
-  db.likes.push([usuarioId, alvoId]) // pass também entra para não reaparecer no feed
-  if (acao === 'pass') return null
-  const reciproco = db.likes.some(([de, para]) => de === alvoId && para === usuarioId)
-  if (!reciproco) return null
-  const match: Match = { id: novoId(), usuarios: [usuarioId, alvoId], criadoEm: new Date().toISOString() }
-  db.matches.push(match)
+  if (!db.interesses.some((i) => i.deId === deId && i.paraId === paraId)) {
+    db.interesses.push({ deId, paraId, criadoEm: new Date().toISOString() })
+  }
+  let match: Match | null = null
+  const reciproco = db.interesses.some((i) => i.deId === paraId && i.paraId === deId)
+  if (reciproco && !db.matches.some((m) => m.usuarios.includes(deId) && m.usuarios.includes(paraId))) {
+    match = { id: novoId(), usuarios: [deId, paraId], criadoEm: new Date().toISOString() }
+    db.matches.push(match)
+  }
+  salvarDb()
   return match
 }
 
-// ---------- Matches / chat ----------
+/** IDs em quem o usuário já registrou interesse. */
+export async function interessesEnviados(usuarioId: string): Promise<string[]> {
+  await esperar(50)
+  return db.interesses.filter((i) => i.deId === usuarioId).map((i) => i.paraId)
+}
+
+/** Perfis que registraram interesse no usuário e ainda não viraram match. */
+export async function interessesPendentes(usuarioId: string): Promise<Perfil[]> {
+  await esperar(100)
+  const enviados = new Set(db.interesses.filter((i) => i.deId === usuarioId).map((i) => i.paraId))
+  return db.interesses
+    .filter((i) => i.paraId === usuarioId && !enviados.has(i.deId))
+    .map((i) => perfilPorId(i.deId))
+    .filter((p): p is Perfil => !!p)
+}
+
+export async function resumoAtividade(usuarioId: string): Promise<ResumoAtividade> {
+  await esperar(100)
+  return {
+    interessesEnviados: db.interesses.filter((i) => i.deId === usuarioId).length,
+    interessesRecebidos: db.interesses.filter((i) => i.paraId === usuarioId).length,
+    matches: db.matches.filter((m) => m.usuarios.includes(usuarioId)).length,
+  }
+}
 
 export async function listarMatches(usuarioId: string): Promise<Array<{ match: Match; outro: Perfil }>> {
   await esperar()
   return db.matches
     .filter((m) => m.usuarios.includes(usuarioId))
-    .map((match) => {
-      const outroId = match.usuarios.find((id) => id !== usuarioId)!
-      return { match, outro: db.perfis.find((p) => p.id === outroId)! }
-    })
+    .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm))
+    .map((match) => ({ match, outro: perfilPorId(match.usuarios.find((id) => id !== usuarioId)!)! }))
 }
+
+// ---------- Conversas ----------
 
 export async function listarMensagens(matchId: string): Promise<Mensagem[]> {
   await esperar(100)
@@ -123,38 +185,6 @@ export async function enviarMensagem(matchId: string, autorId: string, texto: st
   await esperar(100)
   const msg: Mensagem = { id: novoId(), matchId, autorId, texto, enviadaEm: new Date().toISOString() }
   db.mensagens.push(msg)
+  salvarDb()
   return msg
-}
-
-// ---------- Mentoria ----------
-
-export async function listarMentores(): Promise<PerfilMentor[]> {
-  await esperar()
-  return db.perfis.filter((p): p is PerfilMentor => p.papel === 'mentor')
-}
-
-export async function listarSolicitacoes(usuario: Perfil): Promise<SolicitacaoMentoria[]> {
-  await esperar()
-  const campo = usuario.papel === 'mentor' ? 'mentorId' : 'startupId'
-  return db.solicitacoesMentoria.filter((s) => s[campo] === usuario.id)
-}
-
-export async function solicitarMentoria(
-  dados: Pick<SolicitacaoMentoria, 'startupId' | 'mentorId' | 'assunto' | 'descricao'>,
-): Promise<SolicitacaoMentoria> {
-  await esperar()
-  const s: SolicitacaoMentoria = { ...dados, id: novoId(), status: 'pendente', criadaEm: new Date().toISOString() }
-  db.solicitacoesMentoria.push(s)
-  return s
-}
-
-export async function responderSolicitacao(
-  id: string,
-  status: 'aceita' | 'recusada',
-): Promise<SolicitacaoMentoria> {
-  await esperar()
-  const s = db.solicitacoesMentoria.find((x) => x.id === id)
-  if (!s) throw new Error('Solicitação não encontrada')
-  s.status = status
-  return { ...s }
 }
